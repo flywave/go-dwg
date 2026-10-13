@@ -1,0 +1,11 @@
+[package]
+name = "dwgref"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "dwgref"
+path = "src/main.rs"
+
+[dependencies]
+dwg = { path = "../../ref/dwg-rs-main" }

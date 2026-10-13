@@ -1,0 +1,13 @@
+# Rust oracle build artifacts
+tools/dwgref/target/
+ref/dwg-rs-main/target/
+
+# Go
+*.test
+*.out
+
+.DS_Store
+
+ref/
+# ODA sample drawings (copyrighted; tests skip when absent)
+dwg/testdata/oda_corpus/
