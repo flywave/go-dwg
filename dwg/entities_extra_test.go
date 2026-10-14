@@ -417,17 +417,29 @@ func TestDecodeSyntheticBatch1(t *testing.T) {
 	}
 	w2.WriteBD(10)
 	w2.WriteBD(5)
+	w2.WriteBD(0) // end_projection
 	w2.WriteBD(0)
 	w2.WriteBD(0)
-	w2.WriteBD(0)
-	w2.WriteBD(1)
-	w2.WriteBD(0)
+	w2.WriteBD(1) // extrusion
 	w2.WriteBD(0)
 	w2.WriteBD(0)
+	w2.WriteBD(0) // horiz_direction
 	w2.WriteBD(0)
 	w2.WriteBD(0)
+	w2.WriteBD(0) // offset_to_block_insertion
+	// ODA tail for R2004: offset_to_text, box_height, box_width, the
+	// hookline/arrowhead flags + arrowhead type, then two R2000+ flags.
 	w2.WriteBD(0)
-	l, err := decodeLeader(NewBitCursor(w2.bytes()))
+	w2.WriteBD(0)
+	w2.WriteBD(0) // offset_to_text
+	w2.WriteBD(0) // box_height
+	w2.WriteBD(0) // box_width
+	w2.WriteB(false)
+	w2.WriteB(false) // hookline_on_x_dir, arrowhead_on
+	w2.WriteBS(0)    // arrowhead_type
+	w2.WriteB(false)
+	w2.WriteB(false) // R2000+ trailing flags
+	l, err := decodeLeader(NewBitCursor(w2.bytes()), R2004)
 	if err != nil {
 		t.Fatal(err)
 	}

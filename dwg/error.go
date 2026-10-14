@@ -1,5 +1,5 @@
 // Package dwg is a pure-Go reader for Autodesk DWG files (R13 -> R2018 /
-// AC1032), ported from the Apache-2.0 dwg-rs reference implementation.
+// AC1032).
 //
 // The two DWG container families are supported:
 //

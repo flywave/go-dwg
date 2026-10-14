@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// Decode the canonical synthetic fixtures without the Rust oracle, pinning the
-// field values the differential harness also checks.
+// Decode the canonical synthetic fixtures, pinning the decoded field
+// values per release.
 func TestDecodeSynthetic2018Entities(t *testing.T) {
 	raw, err := os.ReadFile("testdata/synthetic_2018.dwg")
 	if err != nil {

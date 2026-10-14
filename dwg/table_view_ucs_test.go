@@ -3,9 +3,8 @@ package dwg
 import "testing"
 
 // Synthetic round-trips for the VIEW and UCS table entries; the corpus has
-// no records, so these byte-level fixtures stand in for the differential
-// harness (a wrong field order trips the split-stream boundary check or the
-// value expectations).
+// no records, so these byte-level fixtures pin the field order (a wrong
+// order trips the split-stream boundary check or the value expectations).
 func TestDecodeSyntheticViewUcs(t *testing.T) {
 	// Inline VIEW (pre-R2007): TV name + xref bits, then the body.
 	w := newBitWriter()

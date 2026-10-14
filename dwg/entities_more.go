@@ -29,6 +29,17 @@ type Leader struct {
 	Extrusion              Vec3D
 	HorizDirection         Vec3D
 	OffsetToBlockInsertion Vec3D
+	// OffsetToText is the leader's text-plane offset (R14+).
+	OffsetToText Vec3D
+	// BoxHeight / BoxWidth are the annotation box dimensions, present on
+	// R14..R2007 (R2010+ omits them on a healthy file — see decodeLeader).
+	BoxHeight float64
+	BoxWidth  float64
+	// HooklineOnXDir and ArrowheadOn are the R2000+ hook-line / arrow flags.
+	HooklineOnXDir bool
+	ArrowheadOn    bool
+	// ArrowheadType is the arrowhead code (BS).
+	ArrowheadType int16
 }
 
 // Tolerance is a decoded feature-control-frame annotation.
@@ -119,7 +130,24 @@ func decodeThreeDFace(c *BitCursor) (ThreeDFace, error) {
 	return f, nil
 }
 
-func decodeLeader(c *BitCursor) (Leader, error) {
+// decodeLeader reads LEADER (§19.4.19). The trailing bits beyond
+// offset_to_block_insertion — offset_to_text (BD3, defaulted) plus the
+// hookline/arrowhead flags and the arrowhead type — are version-gated, and
+// release notes that stop at offset_to_block_insertion mis-decode R2018
+// records by -12 bits.
+//
+// The tail is version-gated exactly as ODA reads it (ODA version codes:
+// R14=21, R2000=23, R2004=25, R2007=27, R2010=29, R2013=31, R2018=33):
+//   - offset_to_text: version > R13 (R14+)
+//   - one discarded BD: version <= R14
+//   - box_height, box_width: version <= R2007 (R2010+ reads them only
+//     during an audit, which the file-read path does not enter)
+//   - arrowhead flags/type: all versions
+//   - R14 only: dimasz + flag/word tail; R2000+: two trailing flags
+//
+// The two trailing hard-pointer ids (arrowhead block, DIMSTYLE) are
+// handle-stream fields and consume no data bits, so they are not read here.
+func decodeLeader(c *BitCursor, v Version) (Leader, error) {
 	var l Leader
 	if _, err := c.ReadB(); err != nil { // unknown bit
 		return l, err
@@ -154,8 +182,66 @@ func decodeLeader(c *BitCursor) (Leader, error) {
 	if l.HorizDirection, err = ReadBD3(c); err != nil {
 		return l, err
 	}
-	l.OffsetToBlockInsertion, err = ReadBD3(c)
-	return l, err
+	if l.OffsetToBlockInsertion, err = ReadBD3(c); err != nil {
+		return l, err
+	}
+	// offset_to_text — R14 and later (ODA version > R13 = 19).
+	if l.OffsetToText, err = ReadBD3(c); err != nil {
+		return l, err
+	}
+	// R14 only: a discarded BD between offset_to_text and the box pair.
+	if v == R14 {
+		if _, err = c.ReadBD(); err != nil {
+			return l, err
+		}
+	}
+	// R14..R2007: box_height, box_width.
+	if v <= R2007 {
+		if l.BoxHeight, err = c.ReadBD(); err != nil {
+			return l, err
+		}
+		if l.BoxWidth, err = c.ReadBD(); err != nil {
+			return l, err
+		}
+	}
+	if l.HooklineOnXDir, err = c.ReadB(); err != nil {
+		return l, err
+	}
+	if l.ArrowheadOn, err = c.ReadB(); err != nil {
+		return l, err
+	}
+	if l.ArrowheadType, err = c.ReadBS(); err != nil {
+		return l, err
+	}
+	if v == R14 {
+		// dimasz + the R13/R14-only flag/word tail.
+		if _, err = c.ReadBD(); err != nil {
+			return l, err
+		}
+		for i := 0; i < 2; i++ {
+			if _, err = c.ReadB(); err != nil {
+				return l, err
+			}
+		}
+		for i := 0; i < 2; i++ {
+			if _, err = c.ReadBS(); err != nil {
+				return l, err
+			}
+		}
+		for i := 0; i < 2; i++ {
+			if _, err = c.ReadB(); err != nil {
+				return l, err
+			}
+		}
+	} else {
+		// R2000+ (version > R14): two trailing flags.
+		for i := 0; i < 2; i++ {
+			if _, err = c.ReadB(); err != nil {
+				return l, err
+			}
+		}
+	}
+	return l, nil
 }
 
 // decodeTolerance reads TOLERANCE. On the R2007+ split layout the three

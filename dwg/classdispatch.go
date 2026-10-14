@@ -265,6 +265,12 @@ func dispatchObjectClass(raw *RawObject, dxfName string, version Version) (Decod
 			return DecodedEntity{Label: "ERROR", TypeCode: raw.TypeCode, Message: err.Error()}, true
 		}
 		return DecodedEntity{Label: "PLOTSETTINGS", TypeCode: raw.TypeCode, Value: &s}, true
+	case "ACAD_GROUP", "GROUP":
+		g, err := decodeGroupObject(raw.Raw, bodyStart, raw.ObjSizeBits, version)
+		if err != nil {
+			return DecodedEntity{Label: "ERROR", TypeCode: raw.TypeCode, Message: err.Error()}, true
+		}
+		return DecodedEntity{Label: "GROUP", TypeCode: raw.TypeCode, Value: &g}, true
 	}
 	return DecodedEntity{}, false
 }

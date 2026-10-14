@@ -430,7 +430,11 @@ func decodeMLine(c *BitCursor) (MLine, error) {
 	if m.NumLines > mlineCapLines {
 		return m, newError(ErrSectionMap, "MLINE line count %d exceeds cap %d", m.NumLines, mlineCapLines)
 	}
-	nv, err := c.ReadBS()
+	// num_verts is a 32-bit BL, not a BS. ODA's OdDbMlineImpl::dwgInFields
+	// reads it with the 32-bit filer method (rdInt32) and passes the result
+	// to OdArray<MLVertex>::resize; a BS here only coincides with a BL for
+	// counts 0..127.
+	nv, err := c.ReadBL()
 	if err != nil {
 		return m, err
 	}

@@ -430,7 +430,7 @@ func DecodeFromRaw(raw *RawObject, version Version) DecodedEntity {
 			e, err := decodeThreeDFace(c)
 			return &e, err
 		case oLeader:
-			e, err := decodeLeader(c)
+			e, err := decodeLeader(c, v)
 			return &e, err
 		case oTolerance:
 			e, err := decodeTolerance(c, v, strings)
@@ -628,7 +628,8 @@ func dispatchTableEntry(raw *RawObject, c *BitCursor, kind ObjectType, version V
 func dispatchObject(raw *RawObject, version Version) DecodedEntity {
 	kind := raw.Kind
 	hasDecoder := kind.Code == oDictionary || kind.Code == oAcDbPlaceholder ||
-		kind.Code == oXRecord || kind.Code == oLayout || kind.Code == oMLineStyle || kind.IsControl()
+		kind.Code == oXRecord || kind.Code == oLayout || kind.Code == oMLineStyle ||
+		kind.Code == oGroup || kind.IsControl()
 	if !hasDecoder {
 		return DecodedEntity{Label: "UNHANDLED", TypeCode: raw.TypeCode}
 	}
@@ -674,6 +675,13 @@ func dispatchObject(raw *RawObject, version Version) DecodedEntity {
 		}
 		value = &m
 		return DecodedEntity{Label: "MLINESTYLE", TypeCode: raw.TypeCode, Value: value}
+	case kind.Code == oGroup:
+		g, err := decodeGroupObject(raw.Raw, bodyStart, raw.ObjSizeBits, version)
+		if err != nil {
+			return DecodedEntity{Label: "ERROR", TypeCode: raw.TypeCode, Message: err.Error()}
+		}
+		value = &g
+		return DecodedEntity{Label: "GROUP", TypeCode: raw.TypeCode, Value: value}
 	default:
 		ct, err := decodeControlObject(raw.Raw, bodyStart, raw.ObjSizeBits, version, kind)
 		if err != nil {
